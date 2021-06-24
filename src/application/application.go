@@ -23,8 +23,6 @@ func StartApplication() {
 	if err := database.Migrate(
 		&user.User{},
 		&agent.Agent{},
-		&post.Post{},
-		&campaign.Campaign{},
 	); err != nil {
 		panic(err)
 	}
