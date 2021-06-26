@@ -1,14 +1,15 @@
 package agent
 
 import (
-	"github.com/Nistagram-Organization/agent-shared/src/utils/rest_error"
 	"github.com/Nistagram-Organization/nistagram-shared/src/datasources"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/rest_error"
 	"gorm.io/gorm"
 )
 
 type AgentRepository interface {
 	Create(*agent.Agent) (*agent.Agent, rest_error.RestErr)
+	Delete(uint) rest_error.RestErr
 }
 
 type agentRepository struct {
@@ -26,4 +27,11 @@ func (r *agentRepository) Create(agent *agent.Agent) (*agent.Agent, rest_error.R
 		return nil, rest_error.NewInternalServerError("Error when trying to create agent", err)
 	}
 	return agent, nil
+}
+
+func (r *agentRepository) Delete(id uint) rest_error.RestErr {
+	if err := r.db.Delete(&agent.Agent{}, id).Error; err != nil {
+		return rest_error.NewInternalServerError("Error when trying to delete agent", err)
+	}
+	return nil
 }

@@ -9,7 +9,9 @@ import (
 	"github.com/Nistagram-Organization/nistagram-users/src/datasources/mysql"
 	agent2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/agent"
 	user2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/user"
-	"github.com/Nistagram-Organization/nistagram-users/src/services/auth_grpc_service"
+	agent3 "github.com/Nistagram-Organization/nistagram-users/src/services/agent"
+	user3 "github.com/Nistagram-Organization/nistagram-users/src/services/user"
+	"github.com/Nistagram-Organization/nistagram-users/src/services/user_grpc_service"
 	"github.com/gin-gonic/gin"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
@@ -47,9 +49,13 @@ func StartApplication() {
 	httpListener := m.Match(cmux.HTTP1Fast())
 
 	grpcS := grpc.NewServer()
-	proto.RegisterAuthServiceServer(grpcS, auth_grpc_service.NewAuthGrpcService(
-		agent2.NewAgentRepository(database),
-		user2.NewUserRepository(database),
+	proto.RegisterUserServiceServer(grpcS, user_grpc_service.NewUserGrpcService(
+		agent3.NewAgentService(
+			agent2.NewAgentRepository(database),
+		),
+		user3.NewUserService(
+			user2.NewUserRepository(database),
+		),
 	))
 
 	pingController := ping.NewPingController()
