@@ -5,7 +5,8 @@ import (
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
-	"github.com/Nistagram-Organization/nistagram-users/src/controllers/ping"
+	agent4 "github.com/Nistagram-Organization/nistagram-users/src/controllers/agent"
+	user4 "github.com/Nistagram-Organization/nistagram-users/src/controllers/user"
 	"github.com/Nistagram-Organization/nistagram-users/src/datasources/mysql"
 	agent2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/agent"
 	user2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/user"
@@ -48,18 +49,24 @@ func StartApplication() {
 	grpcListener := m.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
 	httpListener := m.Match(cmux.HTTP1Fast())
 
+	userService := user3.NewUserService(
+		user2.NewUserRepository(database),
+	)
+	agentService := agent3.NewAgentService(
+		agent2.NewAgentRepository(database),
+	)
+
+	userController := user4.NewUserController(userService)
+	agentController := agent4.NewAgentController(agentService)
+
 	grpcS := grpc.NewServer()
 	proto.RegisterUserServiceServer(grpcS, user_grpc_service.NewUserGrpcService(
-		agent3.NewAgentService(
-			agent2.NewAgentRepository(database),
-		),
-		user3.NewUserService(
-			user2.NewUserRepository(database),
-		),
+		agentService,
+		userService,
 	))
 
-	pingController := ping.NewPingController()
-	router.GET("/ping", pingController.Ping)
+	router.PUT("/users", userController.Edit)
+	router.PUT("/agents", agentController.Edit)
 
 	httpS := &http.Server{
 		Handler: router,
