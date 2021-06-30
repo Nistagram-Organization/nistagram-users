@@ -4,6 +4,7 @@ import (
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
 	"github.com/Nistagram-Organization/nistagram-shared/src/utils/rest_error"
 	agent2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/agent"
+	"github.com/Nistagram-Organization/nistagram-users/src/repositories/user"
 )
 
 type AgentService interface {
@@ -13,11 +14,13 @@ type AgentService interface {
 
 type agentService struct {
 	agentRepository agent2.AgentRepository
+	userRepository  user.UserRepository
 }
 
-func NewAgentService(agentRepository agent2.AgentRepository) AgentService {
+func NewAgentService(agentRepository agent2.AgentRepository, userRepository user.UserRepository) AgentService {
 	return &agentService{
 		agentRepository,
+		userRepository,
 	}
 }
 
@@ -26,5 +29,9 @@ func (s *agentService) Create(agent *agent.Agent) (*agent.Agent, rest_error.Rest
 }
 
 func (s *agentService) Delete(id uint) rest_error.RestErr {
+	if delErr := s.userRepository.Delete(id); delErr != nil {
+		return delErr
+	}
+
 	return s.agentRepository.Delete(id)
 }
