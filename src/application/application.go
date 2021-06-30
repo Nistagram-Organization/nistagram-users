@@ -3,16 +3,21 @@ package application
 import (
 	"fmt"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
+	"github.com/Nistagram-Organization/nistagram-shared/src/model/post"
+	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
-	agent4 "github.com/Nistagram-Organization/nistagram-users/src/controllers/agent"
-	user4 "github.com/Nistagram-Organization/nistagram-users/src/controllers/user"
+	usercontroller "github.com/Nistagram-Organization/nistagram-users/src/controllers/user"
 	"github.com/Nistagram-Organization/nistagram-users/src/datasources/mysql"
 	agent2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/agent"
+	"github.com/Nistagram-Organization/nistagram-users/src/repositories/post_user_repository"
+	registered_user2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/registered_user"
 	user2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/user"
 	agent3 "github.com/Nistagram-Organization/nistagram-users/src/services/agent"
+	registered_user3 "github.com/Nistagram-Organization/nistagram-users/src/services/registered_user"
 	user3 "github.com/Nistagram-Organization/nistagram-users/src/services/user"
 	"github.com/Nistagram-Organization/nistagram-users/src/services/user_grpc_service"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
@@ -26,6 +31,11 @@ var (
 )
 
 func StartApplication() {
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AddAllowHeaders("Authorization")
+	router.Use(cors.New(corsConfig))
+
 	database := mysql.NewMySqlDatabaseClient()
 	if err := database.Init(); err != nil {
 		panic(err)
@@ -33,7 +43,9 @@ func StartApplication() {
 
 	if err := database.Migrate(
 		&user.User{},
+		&registered_user.RegisteredUser{},
 		&agent.Agent{},
+		&post.PostUser{},
 	); err != nil {
 		panic(err)
 	}
@@ -49,24 +61,32 @@ func StartApplication() {
 	grpcListener := m.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
 	httpListener := m.Match(cmux.HTTP1Fast())
 
-	userService := user3.NewUserService(
-		user2.NewUserRepository(database),
-	)
-	agentService := agent3.NewAgentService(
-		agent2.NewAgentRepository(database),
-	)
-
-	userController := user4.NewUserController(userService)
-	agentController := agent4.NewAgentController(agentService)
-
 	grpcS := grpc.NewServer()
 	proto.RegisterUserServiceServer(grpcS, user_grpc_service.NewUserGrpcService(
-		agentService,
-		userService,
+		agent3.NewAgentService(
+			agent2.NewAgentRepository(database),
+			user2.NewUserRepository(database),
+		),
+		registered_user3.NewRegisteredUserService(
+			registered_user2.NewRegisteredUserRepository(database),
+			user2.NewUserRepository(database),
+		),
+		user3.NewUserService(
+			user2.NewUserRepository(database),
+			registered_user2.NewRegisteredUserRepository(database),
+			post_user_repository.NewPostUserRepository(database),
+		),
 	))
 
-	router.PUT("/users", userController.Edit)
-	router.PUT("/agents", agentController.Edit)
+	userController := usercontroller.NewUserController(
+		user3.NewUserService(
+			user2.NewUserRepository(database),
+			registered_user2.NewRegisteredUserRepository(database),
+			post_user_repository.NewPostUserRepository(database),
+		),
+	)
+	router.POST("/users/favorites", userController.AddPostToFavorites)
+	router.DELETE("/users/favorites", userController.RemovePostFromFavorites)
 
 	httpS := &http.Server{
 		Handler: router,

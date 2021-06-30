@@ -2,23 +2,27 @@ package user_grpc_service
 
 import (
 	"context"
-	agent2 "github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
+	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/gender"
-	user2 "github.com/Nistagram-Organization/nistagram-shared/src/model/user"
+	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
+	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
 	agent3 "github.com/Nistagram-Organization/nistagram-users/src/services/agent"
+	registered_user2 "github.com/Nistagram-Organization/nistagram-users/src/services/registered_user"
 	user3 "github.com/Nistagram-Organization/nistagram-users/src/services/user"
 )
 
 type userGrpcService struct {
 	proto.UserServiceServer
-	agentService agent3.AgentService
-	userService  user3.UserService
+	registeredUserService registered_user2.RegisteredUserService
+	agentService          agent3.AgentService
+	userService           user3.UserService
 }
 
-func NewUserGrpcService(agentService agent3.AgentService, userService user3.UserService) proto.UserServiceServer {
+func NewUserGrpcService(agentService agent3.AgentService, registeredUserService registered_user2.RegisteredUserService, userService user3.UserService) proto.UserServiceServer {
 	return &userGrpcService{
 		proto.UnimplementedUserServiceServer{},
+		registeredUserService,
 		agentService,
 		userService,
 	}
@@ -29,28 +33,32 @@ func (s *userGrpcService) CreateUser(ctx context.Context, registrationRequest *p
 
 	var id uint64
 	if userMessage.Role == proto.Role_USER {
-		var user *user2.User
+		var userEntity *user.User
 		var err error
 
-		user = toUser(userMessage)
-		user, err = s.userService.Create(user)
+		userEntity = getUser(userMessage)
+		registeredUser := &registered_user.RegisteredUser{
+			User: *userEntity,
+		}
+
+		registeredUser, err = s.registeredUserService.Create(registeredUser)
 		if err != nil {
 			return nil, err
 		}
 
-		id = uint64(user.ID)
+		id = uint64(registeredUser.ID)
 	} else {
-		var agent *agent2.Agent
+		var agentEntity *agent.Agent
 		var err error
 
-		agent = toAgent(userMessage)
-		agent, err = s.agentService.Create(agent)
+		agentEntity = toAgent(userMessage)
+		agentEntity, err = s.agentService.Create(agentEntity)
 
 		if err != nil {
 			return nil, err
 		}
 
-		id = uint64(agent.ID)
+		id = uint64(agentEntity.ID)
 	}
 
 	res := proto.RegistrationResponse{Id: id}
@@ -60,7 +68,7 @@ func (s *userGrpcService) CreateUser(ctx context.Context, registrationRequest *p
 
 func (s *userGrpcService) DeleteUser(ctx context.Context, deleteUserRequest *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error) {
 	if deleteUserRequest.Role == proto.Role_USER {
-		err := s.userService.Delete(uint(deleteUserRequest.Id))
+		err := s.registeredUserService.Delete(uint(deleteUserRequest.Id))
 		if err != nil {
 			return nil, err
 		}
@@ -73,28 +81,27 @@ func (s *userGrpcService) DeleteUser(ctx context.Context, deleteUserRequest *pro
 	return &proto.DeleteUserResponse{Success: true}, nil
 }
 
-func toAgent(agent *proto.UserMessage) *agent2.Agent {
-	user := toUser(agent)
-	user.Active = false
+func toAgent(agentEntity *proto.UserMessage) *agent.Agent {
+	userEntity := getUser(agentEntity)
 
-	return &agent2.Agent{
-		User: *user,
+	return &agent.Agent{
+		User: *userEntity,
 	}
-
 }
 
-func toUser(user *proto.UserMessage) *user2.User {
-	return &user2.User{
-		Username:  user.Username,
-		Name:      user.Name,
-		Surname:   user.Surname,
-		Phone:     user.Password,
-		BirthDate: user.BirthDate,
-		Gender:    toGender(user.Gender),
-		Public:    user.Public,
-		Taggable:  user.Taggable,
+func getUser(userEntity *proto.UserMessage) *user.User {
+	return &user.User{
+		Name:      userEntity.Username,
+		Username:  userEntity.Username,
+		FirstName: userEntity.Name,
+		LastName:  userEntity.Surname,
+		Phone:     userEntity.Phone,
+		BirthDate: userEntity.BirthDate,
+		Gender:    toGender(userEntity.Gender),
+		Public:    userEntity.Public,
+		Taggable:  userEntity.Taggable,
 		Active:    true,
-		Email:     user.Email,
+		Email:     userEntity.Email,
 	}
 }
 
