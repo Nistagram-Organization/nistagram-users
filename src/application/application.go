@@ -31,7 +31,10 @@ var (
 )
 
 func StartApplication() {
-	router.Use(cors.Default())
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AddAllowHeaders("Authorization")
+	router.Use(cors.New(corsConfig))
 
 	database := mysql.NewMySqlDatabaseClient()
 	if err := database.Init(); err != nil {
