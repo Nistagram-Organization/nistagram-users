@@ -86,6 +86,28 @@ func (s *userService) AddPostToFavorites(dto *dtos.FavoritesDTO) rest_error.Rest
 	return err
 }
 
+func (s *userService) AddPostToFavorites(dto *dtos.FavoritesDTO) rest_error.RestErr {
+	userEntity, userErr := s.userRepository.GetByEmail(dto.UserEmail)
+	if userErr != nil {
+		return userErr
+	}
+
+	for _, favorite := range userEntity.Favorites {
+		if favorite.PostID == dto.PostID {
+			return nil
+		}
+	}
+
+	postUser := post.PostUser{
+		PostID: dto.PostID,
+		UserID: userEntity.ID,
+	}
+
+	userEntity.Favorites = append(userEntity.Favorites, postUser)
+
+	return s.userRepository.Update(userEntity)
+}
+
 func (s *userService) RemovePostFromFavorites(userMail string, postId uint) rest_error.RestErr {
 	userEntity, userErr := s.userRepository.GetByEmail(userMail)
 	if userErr != nil {

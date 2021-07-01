@@ -92,6 +92,7 @@ func StartApplication() {
 	userController := usercontroller.NewUserController(
 		userService,
 	)
+  
 	router.POST("/users/favorites", userController.AddPostToFavorites)
 	router.DELETE("/users/favorites", userController.RemovePostFromFavorites)
 
