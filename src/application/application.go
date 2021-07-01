@@ -61,32 +61,43 @@ func StartApplication() {
 	grpcListener := m.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
 	httpListener := m.Match(cmux.HTTP1Fast())
 
-	grpcS := grpc.NewServer()
-	proto.RegisterUserServiceServer(grpcS, user_grpc_service.NewUserGrpcService(
-		agent3.NewAgentService(
-			agent2.NewAgentRepository(database),
-			user2.NewUserRepository(database),
-		),
-		registered_user3.NewRegisteredUserService(
-			registered_user2.NewRegisteredUserRepository(database),
-			user2.NewUserRepository(database),
-		),
-		user3.NewUserService(
-			user2.NewUserRepository(database),
-			registered_user2.NewRegisteredUserRepository(database),
-			post_user_repository.NewPostUserRepository(database),
-		),
-	))
+	agentRepository := agent2.NewAgentRepository(database)
+	userRepository := user2.NewUserRepository(database)
+	registeredUserRepository := registered_user2.NewRegisteredUserRepository(database)
+	postUserRepository := post_user_repository.NewPostUserRepository(database)
 
-	userController := usercontroller.NewUserController(
-		user3.NewUserService(
-			user2.NewUserRepository(database),
-			registered_user2.NewRegisteredUserRepository(database),
-			post_user_repository.NewPostUserRepository(database),
+	agentService := agent3.NewAgentService(
+		agentRepository,
+		userRepository,
+	)
+	registeredUserService := registered_user3.NewRegisteredUserService(
+		registeredUserRepository,
+		userRepository,
+	)
+	userService := user3.NewUserService(
+		userRepository,
+		registeredUserRepository,
+		postUserRepository,
+	)
+
+	grpcS := grpc.NewServer()
+	proto.RegisterUserServiceServer(grpcS,
+		user_grpc_service.NewUserGrpcService(
+			agentService,
+			registeredUserService,
+			userService,
 		),
 	)
+
+	userController := usercontroller.NewUserController(
+		userService,
+	)
+  
 	router.POST("/users/favorites", userController.AddPostToFavorites)
 	router.DELETE("/users/favorites", userController.RemovePostFromFavorites)
+
+	router.GET("/users", userController.GetByEmail)
+	router.PUT("/users", userController.Update)
 
 	httpS := &http.Server{
 		Handler: router,

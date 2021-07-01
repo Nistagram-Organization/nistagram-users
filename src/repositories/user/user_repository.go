@@ -12,7 +12,7 @@ import (
 type UserRepository interface {
 	Delete(uint) rest_error.RestErr
 	GetByEmail(string) (*user.User, rest_error.RestErr)
-	Update(*user.User) rest_error.RestErr
+	Update(*user.User) (*user.User, rest_error.RestErr)
 	DeleteFavorite(uint, uint) rest_error.RestErr
 }
 
@@ -51,11 +51,11 @@ func (r *userRepository) GetByEmail(email string) (*user.User, rest_error.RestEr
 	return &userEntity, nil
 }
 
-func (r *userRepository) Update(user *user.User) rest_error.RestErr {
+func (r *userRepository) Update(user *user.User) (*user.User, rest_error.RestErr) {
 	if err := r.db.Save(user).Error; err != nil {
-		return rest_error.NewInternalServerError("Error when trying to update user", err)
+		return nil, rest_error.NewInternalServerError("Error when trying to update user", err)
 	}
-	return nil
+	return user, nil
 }
 
 func (r *userRepository) DeleteFavorite(userId uint, postUserId uint) rest_error.RestErr {
