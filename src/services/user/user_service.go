@@ -92,6 +92,7 @@ func (s *userService) RemovePostFromFavorites(userMail string, postId uint) rest
 		return userErr
 	}
 
+	i := 0
 	for _, favorite := range userEntity.Favorites {
 		if favorite.PostID == postId {
 			delErr := s.userRepository.DeleteFavorite(userEntity.ID, favorite.ID)
@@ -103,8 +104,12 @@ func (s *userService) RemovePostFromFavorites(userMail string, postId uint) rest
 			if delErr != nil {
 				return delErr
 			}
+		} else {
+			userEntity.Favorites[i] = favorite
+			i++
 		}
 	}
+	userEntity.Favorites = userEntity.Favorites[:i]
 
 	_, err := s.userRepository.Update(userEntity)
 	return err
