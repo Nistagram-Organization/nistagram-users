@@ -2,6 +2,7 @@ package user
 
 import (
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/post"
+	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/utils/rest_error"
 	"github.com/Nistagram-Organization/nistagram-users/src/dtos"
 	"github.com/Nistagram-Organization/nistagram-users/src/repositories/post_user_repository"
@@ -12,6 +13,8 @@ import (
 type UserService interface {
 	AddPostToFavorites(*dtos.FavoritesDTO) rest_error.RestErr
 	RemovePostFromFavorites(string, uint) rest_error.RestErr
+	GetByEmail(string) (*user.User, rest_error.RestErr)
+	Update(*user.User) (*user.User, rest_error.RestErr)
 }
 
 type userService struct {
@@ -27,6 +30,36 @@ func NewUserService(userRepository user2.UserRepository, registeredUserRepositor
 		registeredUserRepository,
 		postUserRepository,
 	}
+}
+
+func (s *userService) GetByEmail(email string) (*user.User, rest_error.RestErr) {
+	return s.userRepository.GetByEmail(email)
+}
+
+func (s *userService) Update(editedUser *user.User) (*user.User, rest_error.RestErr) {
+	existingUser, err := s.userRepository.GetByEmail(editedUser.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	existingUser.Name = editedUser.Name
+	existingUser.LastName = editedUser.LastName
+	existingUser.Website = editedUser.Website
+	existingUser.Phone = editedUser.Phone
+	existingUser.Public = editedUser.Public
+	existingUser.Taggable = editedUser.Taggable
+	existingUser.Biography = editedUser.Biography
+
+	if err := existingUser.Validate(); err != nil {
+		return nil, err
+	}
+
+	updatedUser, err := s.userRepository.Update(existingUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
 }
 
 func (s *userService) AddPostToFavorites(dto *dtos.FavoritesDTO) rest_error.RestErr {
@@ -48,7 +81,9 @@ func (s *userService) AddPostToFavorites(dto *dtos.FavoritesDTO) rest_error.Rest
 
 	userEntity.Favorites = append(userEntity.Favorites, postUser)
 
-	return s.userRepository.Update(userEntity)
+	_, err := s.userRepository.Update(userEntity)
+
+	return err
 }
 
 func (s *userService) RemovePostFromFavorites(userMail string, postId uint) rest_error.RestErr {
@@ -71,5 +106,6 @@ func (s *userService) RemovePostFromFavorites(userMail string, postId uint) rest
 		}
 	}
 
-	return s.userRepository.Update(userEntity)
+	_, err := s.userRepository.Update(userEntity)
+	return err
 }

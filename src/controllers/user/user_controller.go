@@ -1,6 +1,7 @@
 package user
 
 import (
+	model "github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/utils/rest_error"
 	"github.com/Nistagram-Organization/nistagram-users/src/dtos"
 	"github.com/Nistagram-Organization/nistagram-users/src/services/user"
@@ -12,6 +13,8 @@ import (
 type UserController interface {
 	AddPostToFavorites(*gin.Context)
 	RemovePostFromFavorites(*gin.Context)
+	GetByEmail(*gin.Context)
+	Update(*gin.Context)
 }
 
 type userController struct {
@@ -30,6 +33,33 @@ func getId(idParam string) (uint, rest_error.RestErr) {
 		return 0, rest_error.NewBadRequestError("Id should be a number")
 	}
 	return uint(id), nil
+}
+
+func (c *userController) GetByEmail(ctx *gin.Context) {
+	email := ctx.Query("email")
+	user, err := c.usersService.GetByEmail(email)
+	if err != nil {
+		ctx.JSON(err.Status(), err)
+		return
+	}
+	ctx.JSON(http.StatusOK, user)
+}
+
+func (c *userController) Update(ctx *gin.Context) {
+	var user model.User
+	if err := ctx.ShouldBindJSON(&user); err != nil {
+		restErr := rest_error.NewBadRequestError("invalid json body")
+		ctx.JSON(restErr.Status(), restErr)
+		return
+	}
+
+	result, err := c.usersService.Update(&user)
+	if err != nil {
+		ctx.JSON(err.Status(), err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
 }
 
 func (c *userController) AddPostToFavorites(ctx *gin.Context) {
