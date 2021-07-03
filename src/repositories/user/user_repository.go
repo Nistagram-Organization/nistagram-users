@@ -14,6 +14,7 @@ type UserRepository interface {
 	GetByEmail(string) (*user.User, rest_error.RestErr)
 	Update(*user.User) (*user.User, rest_error.RestErr)
 	DeleteFavorite(uint, uint) rest_error.RestErr
+	GetById(uint) (*user.User, rest_error.RestErr)
 }
 
 type userRepository struct {
@@ -66,4 +67,12 @@ func (r *userRepository) DeleteFavorite(userId uint, postUserId uint) rest_error
 	}
 
 	return nil
+}
+
+func (r *userRepository) GetById(id uint) (*user.User, rest_error.RestErr) {
+	var user *user.User
+	if err := r.db.First(user, id).Error; err != nil {
+		return nil, rest_error.NewNotFoundError(fmt.Sprintf("User with id '%d' not found", id))
+	}
+	return user, nil
 }
