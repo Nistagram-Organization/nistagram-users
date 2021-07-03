@@ -15,6 +15,7 @@ type UserService interface {
 	RemovePostFromFavorites(string, uint) rest_error.RestErr
 	GetByEmail(string) (*user.User, rest_error.RestErr)
 	Update(*user.User) (*user.User, rest_error.RestErr)
+	GetById(uint) (*user.User, rest_error.RestErr)
 }
 
 type userService struct {
@@ -113,4 +114,8 @@ func (s *userService) RemovePostFromFavorites(userMail string, postId uint) rest
 
 	_, err := s.userRepository.Update(userEntity)
 	return err
+}
+
+func (s *userService) GetById(id uint) (*user.User, rest_error.RestErr) {
+	return s.userRepository.GetById(id)
 }

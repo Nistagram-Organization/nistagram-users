@@ -81,6 +81,17 @@ func (s *userGrpcService) DeleteUser(ctx context.Context, deleteUserRequest *pro
 	return &proto.DeleteUserResponse{Success: true}, nil
 }
 
+func (s *userGrpcService) GetUserEmail(ctx context.Context, getUserEmailRequest *proto.GetUserEmailRequest) (*proto.GetUserEmailResponse, error) {
+	id := uint(getUserEmailRequest.Id)
+	user, err := s.userService.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	response := proto.GetUserEmailResponse{Email: user.Email}
+	return &response, nil
+}
+
 func toAgent(agentEntity *proto.UserMessage) *agent.Agent {
 	userEntity := getUser(agentEntity)
 
