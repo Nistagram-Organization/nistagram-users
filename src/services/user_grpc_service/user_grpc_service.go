@@ -125,6 +125,27 @@ func (s *userGrpcService) CheckIfUserIsTaggable(ctx context.Context, checkTaggab
 	return &response, nil
 }
 
+
+func (s *userGrpcService) GetFollowingUsers(getFollowingUsersRequest *proto.GetFollowingUsersRequest, srv proto.UserService_GetFollowingUsersServer) error {
+	userEmail := getFollowingUsersRequest.GetUserEmail()
+
+	followingUsers, err := s.userService.GetFollowingUsers(userEmail)
+	if err != nil {
+		return err
+	}
+
+	for _, u := range followingUsers {
+		getFollowingUsersResponse := proto.GetFollowingUsersResponse{
+			User: u,
+		}
+		if err := srv.Send(&getFollowingUsersResponse); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func toAgent(agentEntity *proto.UserMessage) *agent.Agent {
 	userEntity := getUser(agentEntity)
 

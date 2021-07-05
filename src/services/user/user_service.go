@@ -21,6 +21,7 @@ type UserService interface {
 	CheckIfUserIsTaggable(string) bool
 	FollowUser(*dtos.FollowRequestDTO) rest_error.RestErr
 	CheckIfUserIsFollowing(string, string) (bool, rest_error.RestErr)
+	GetFollowingUsers(string) ([]string, rest_error.RestErr)
 }
 
 type userService struct {
@@ -190,6 +191,20 @@ func (s *userService) CheckIfUserIsFollowing(userEmail string, userToFollowEmail
 	}
 
 	return false, nil
+}
+
+func(s *userService) GetFollowingUsers(userEmail string) ([]string, rest_error.RestErr) {
+	userEntity, userErr := s.userRepository.GetByEmail(userEmail)
+	if userErr != nil {
+		return nil, userErr
+	}
+
+	var followingUsers []string
+	for _, u := range userEntity.Following {
+		followingUsers = append(followingUsers, u.Email)
+	}
+
+	return followingUsers, nil
 }
 
 func (s *userService) GetById(id uint) (*user.User, rest_error.RestErr) {
