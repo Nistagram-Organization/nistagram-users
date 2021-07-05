@@ -15,6 +15,7 @@ type UserRepository interface {
 	Update(*user.User) (*user.User, rest_error.RestErr)
 	DeleteFavorite(uint, uint) rest_error.RestErr
 	GetById(uint) (*user.User, rest_error.RestErr)
+	GetByUsername(string) (*user.User, rest_error.RestErr)
 }
 
 type userRepository struct {
@@ -52,6 +53,17 @@ func (r *userRepository) GetByEmail(email string) (*user.User, rest_error.RestEr
 	return &userEntity, nil
 }
 
+func (r *userRepository) GetByUsername(username string) (*user.User, rest_error.RestErr) {
+	userEntity := user.User{
+		Username: username,
+	}
+	if err := r.db.Where("username = ?", username).Preload("Favorites").First(&userEntity).Error; err != nil {
+		return nil, rest_error.NewNotFoundError(fmt.Sprintf("User does not exist"))
+	}
+
+	return &userEntity, nil
+}
+
 func (r *userRepository) Update(user *user.User) (*user.User, rest_error.RestErr) {
 	if err := r.db.Save(user).Error; err != nil {
 		return nil, rest_error.NewInternalServerError("Error when trying to update user", err)
@@ -60,7 +72,7 @@ func (r *userRepository) Update(user *user.User) (*user.User, rest_error.RestErr
 }
 
 func (r *userRepository) DeleteFavorite(userId uint, postUserId uint) rest_error.RestErr {
-	tx := r.db.Exec(fmt.Sprintf("delete from favorites where user_id=%d & post_user_id=%d", userId, postUserId))
+	tx := r.db.Exec(fmt.Sprintf("delete from favorites where user_id=%d and post_user_id=%d", userId, postUserId))
 
 	if tx.Error != nil {
 		return rest_error.NewInternalServerError("Error when trying to delete post from favorites", tx.Error)

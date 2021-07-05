@@ -16,6 +16,9 @@ type UserService interface {
 	GetByEmail(string) (*user.User, rest_error.RestErr)
 	Update(*user.User) (*user.User, rest_error.RestErr)
 	GetById(uint) (*user.User, rest_error.RestErr)
+	CheckIfPostIsInFavorites(string, uint) (bool, rest_error.RestErr)
+	GetByUsername(string) (*user.User, rest_error.RestErr)
+	CheckIfUserIsTaggable(string) bool
 }
 
 type userService struct {
@@ -35,6 +38,10 @@ func NewUserService(userRepository user2.UserRepository, registeredUserRepositor
 
 func (s *userService) GetByEmail(email string) (*user.User, rest_error.RestErr) {
 	return s.userRepository.GetByEmail(email)
+}
+
+func (s *userService) GetByUsername(username string) (*user.User, rest_error.RestErr) {
+	return s.userRepository.GetByUsername(username)
 }
 
 func (s *userService) Update(editedUser *user.User) (*user.User, rest_error.RestErr) {
@@ -114,6 +121,30 @@ func (s *userService) RemovePostFromFavorites(userMail string, postId uint) rest
 
 	_, err := s.userRepository.Update(userEntity)
 	return err
+}
+
+func (s *userService) CheckIfPostIsInFavorites(userEmail string, postID uint) (bool, rest_error.RestErr) {
+	userEntity, userErr := s.userRepository.GetByEmail(userEmail)
+	if userErr != nil {
+		return false, userErr
+	}
+
+	for _, favorite := range userEntity.Favorites {
+		if favorite.PostID == postID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (s *userService) CheckIfUserIsTaggable(username string) bool {
+	userEntity, userErr := s.userRepository.GetByUsername(username)
+	if userErr != nil {
+		return false
+	}
+
+	return userEntity.Taggable
 }
 
 func (s *userService) GetById(id uint) (*user.User, rest_error.RestErr) {
