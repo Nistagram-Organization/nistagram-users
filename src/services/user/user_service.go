@@ -193,7 +193,7 @@ func (s *userService) CheckIfUserIsFollowing(userEmail string, userToFollowEmail
 	return false, nil
 }
 
-func(s *userService) GetFollowingUsers(userEmail string) ([]string, rest_error.RestErr) {
+func (s *userService) GetFollowingUsers(userEmail string) ([]string, rest_error.RestErr) {
 	userEntity, userErr := s.userRepository.GetByEmail(userEmail)
 	if userErr != nil {
 		return nil, userErr
