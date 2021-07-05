@@ -99,6 +99,8 @@ func StartApplication() {
 	router.GET("/users", userController.GetByEmail)
 	router.PUT("/users", userController.Update)
 	router.GET("/users/:username", userController.GetByUsername)
+	router.POST("/users/following", userController.FollowUser)
+	router.GET("/users/following", userController.CheckIfUserIsFollowing)
 
 	httpS := &http.Server{
 		Handler: router,

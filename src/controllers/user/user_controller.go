@@ -16,6 +16,8 @@ type UserController interface {
 	GetByEmail(*gin.Context)
 	Update(*gin.Context)
 	GetByUsername(*gin.Context)
+	FollowUser(*gin.Context)
+	CheckIfUserIsFollowing(*gin.Context)
 }
 
 type userController struct {
@@ -104,4 +106,31 @@ func (c *userController) RemovePostFromFavorites(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, removeErr)
+}
+
+func (c *userController) FollowUser(ctx *gin.Context) {
+	var followRequestDTO dtos.FollowRequestDTO
+	if err := ctx.ShouldBindJSON(&followRequestDTO); err != nil {
+		restErr := rest_error.NewBadRequestError("invalid json body")
+		ctx.JSON(restErr.Status(), restErr)
+		return
+	}
+
+	followErr := c.usersService.FollowUser(&followRequestDTO)
+	if followErr != nil {
+		ctx.JSON(followErr.Status(), followErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, followErr)
+}
+
+func (c *userController) CheckIfUserIsFollowing(ctx *gin.Context) {
+	following, checkErr := c.usersService.CheckIfUserIsFollowing(ctx.Query("user"), ctx.Query("following_user"))
+	if checkErr != nil {
+		ctx.JSON(checkErr.Status(), checkErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, following)
 }
