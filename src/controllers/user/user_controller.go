@@ -47,7 +47,7 @@ func (c *userController) GetByEmail(ctx *gin.Context) {
 }
 
 func (c *userController) GetByUsername(ctx *gin.Context) {
-	email := ctx.Query("username")
+	email := ctx.Param("username")
 	userEntity, err := c.usersService.GetByUsername(email)
 	if err != nil {
 		ctx.JSON(err.Status(), err)

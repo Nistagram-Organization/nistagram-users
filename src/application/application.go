@@ -98,7 +98,7 @@ func StartApplication() {
 
 	router.GET("/users", userController.GetByEmail)
 	router.PUT("/users", userController.Update)
-	router.GET("/users-by-username", userController.GetByUsername)
+	router.GET("/users/:username", userController.GetByUsername)
 
 	httpS := &http.Server{
 		Handler: router,
