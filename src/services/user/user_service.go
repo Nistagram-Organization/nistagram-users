@@ -19,6 +19,8 @@ type UserService interface {
 	CheckIfPostIsInFavorites(string, uint) (bool, rest_error.RestErr)
 	GetByUsername(string) (*user.User, rest_error.RestErr)
 	CheckIfUserIsTaggable(string) bool
+	FollowUser(*dtos.FollowRequestDTO) rest_error.RestErr
+	CheckIfUserIsFollowing(string, string) (bool, rest_error.RestErr)
 }
 
 type userService struct {
@@ -145,6 +147,49 @@ func (s *userService) CheckIfUserIsTaggable(username string) bool {
 	}
 
 	return userEntity.Taggable
+}
+
+func (s *userService) FollowUser(followRequestDTO *dtos.FollowRequestDTO) rest_error.RestErr {
+	userEntity, userErr := s.userRepository.GetByEmail(followRequestDTO.User)
+	if userErr != nil {
+		return userErr
+	}
+
+	userToFollow, userErr := s.userRepository.GetByEmail(followRequestDTO.UserToFollow)
+	if userErr != nil {
+		return userErr
+	}
+
+	for _, u := range userEntity.Following {
+		if u.ID == userToFollow.ID {
+			return nil
+		}
+	}
+
+	userEntity.Following = append(userEntity.Following, *userToFollow)
+	_, err := s.userRepository.Update(userEntity)
+
+	return err
+}
+
+func (s *userService) CheckIfUserIsFollowing(userEmail string, userToFollowEmail string) (bool, rest_error.RestErr) {
+	userEntity, userErr := s.userRepository.GetByEmail(userEmail)
+	if userErr != nil {
+		return false, userErr
+	}
+
+	userToFollow, userErr := s.userRepository.GetByEmail(userToFollowEmail)
+	if userErr != nil {
+		return false, userErr
+	}
+
+	for _, u := range userEntity.Following {
+		if u.ID == userToFollow.ID {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (s *userService) GetById(id uint) (*user.User, rest_error.RestErr) {
