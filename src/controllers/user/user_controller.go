@@ -15,6 +15,7 @@ type UserController interface {
 	RemovePostFromFavorites(*gin.Context)
 	GetByEmail(*gin.Context)
 	Update(*gin.Context)
+	GetByUsername(*gin.Context)
 }
 
 type userController struct {
@@ -43,6 +44,16 @@ func (c *userController) GetByEmail(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, user)
+}
+
+func (c *userController) GetByUsername(ctx *gin.Context) {
+	email := ctx.Param("username")
+	userEntity, err := c.usersService.GetByUsername(email)
+	if err != nil {
+		ctx.JSON(err.Status(), err)
+		return
+	}
+	ctx.JSON(http.StatusOK, userEntity)
 }
 
 func (c *userController) Update(ctx *gin.Context) {

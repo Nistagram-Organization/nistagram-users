@@ -92,6 +92,39 @@ func (s *userGrpcService) GetUserEmail(ctx context.Context, getUserEmailRequest 
 	return &response, nil
 }
 
+func (s *userGrpcService) GetUsername(ctx context.Context, getUsernameRequest *proto.GetUsernameRequest) (*proto.GetUsernameResponse, error) {
+	userEmail := getUsernameRequest.GetEmail()
+	userEntity, err := s.userService.GetByEmail(userEmail)
+	if err != nil {
+		return nil, err
+	}
+
+	response := proto.GetUsernameResponse{Username: userEntity.Username}
+	return &response, nil
+}
+
+func (s *userGrpcService) CheckIfPostIsInFavorites(ctx context.Context, checkFavoritesRequest *proto.CheckFavoritesRequest) (*proto.CheckFavoritesResponse, error) {
+	userEmail := checkFavoritesRequest.GetEmail()
+	postID := checkFavoritesRequest.GetPostID()
+
+	inFavorites, err := s.userService.CheckIfPostIsInFavorites(userEmail, uint(postID))
+	if err != nil {
+		return nil, err
+	}
+
+	response := proto.CheckFavoritesResponse{InFavorites: inFavorites}
+	return &response, nil
+}
+
+func (s *userGrpcService) CheckIfUserIsTaggable(ctx context.Context, checkTaggableRequest *proto.CheckTaggableRequest) (*proto.CheckTaggableResponse, error) {
+	username := checkTaggableRequest.GetUsername()
+
+	taggable := s.userService.CheckIfUserIsTaggable(username)
+
+	response := proto.CheckTaggableResponse{Taggable: taggable}
+	return &response, nil
+}
+
 func toAgent(agentEntity *proto.UserMessage) *agent.Agent {
 	userEntity := getUser(agentEntity)
 

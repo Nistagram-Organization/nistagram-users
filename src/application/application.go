@@ -92,12 +92,13 @@ func StartApplication() {
 	userController := usercontroller.NewUserController(
 		userService,
 	)
-  
+
 	router.POST("/users/favorites", userController.AddPostToFavorites)
 	router.DELETE("/users/favorites", userController.RemovePostFromFavorites)
 
 	router.GET("/users", userController.GetByEmail)
 	router.PUT("/users", userController.Update)
+	router.GET("/users/:username", userController.GetByUsername)
 
 	httpS := &http.Server{
 		Handler: router,
