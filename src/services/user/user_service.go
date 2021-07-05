@@ -149,7 +149,7 @@ func (s *userService) CheckIfUserIsTaggable(username string) bool {
 	return userEntity.Taggable
 }
 
-func(s *userService) FollowUser(followRequestDTO *dtos.FollowRequestDTO) rest_error.RestErr {
+func (s *userService) FollowUser(followRequestDTO *dtos.FollowRequestDTO) rest_error.RestErr {
 	userEntity, userErr := s.userRepository.GetByEmail(followRequestDTO.User)
 	if userErr != nil {
 		return userErr
@@ -172,7 +172,7 @@ func(s *userService) FollowUser(followRequestDTO *dtos.FollowRequestDTO) rest_er
 	return err
 }
 
-func(s *userService) CheckIfUserIsFollowing(userEmail string, userToFollowEmail string) (bool, rest_error.RestErr) {
+func (s *userService) CheckIfUserIsFollowing(userEmail string, userToFollowEmail string) (bool, rest_error.RestErr) {
 	userEntity, userErr := s.userRepository.GetByEmail(userEmail)
 	if userErr != nil {
 		return false, userErr
