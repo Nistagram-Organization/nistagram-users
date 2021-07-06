@@ -19,6 +19,7 @@ import (
 	"github.com/Nistagram-Organization/nistagram-users/src/services/user_grpc_service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"log"
@@ -29,6 +30,14 @@ import (
 var (
 	router = gin.Default()
 )
+
+func prometheusHandler() gin.HandlerFunc {
+	h := promhttp.Handler()
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
 
 func StartApplication() {
 	corsConfig := cors.DefaultConfig()
@@ -101,6 +110,8 @@ func StartApplication() {
 	router.GET("/users/:username", userController.GetByUsername)
 	router.POST("/users/following", userController.FollowUser)
 	router.GET("/users/following", userController.CheckIfUserIsFollowing)
+
+	router.GET("/metrics", prometheusHandler())
 
 	httpS := &http.Server{
 		Handler: router,
