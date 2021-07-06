@@ -7,6 +7,7 @@ import (
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/prometheus_handler"
 	usercontroller "github.com/Nistagram-Organization/nistagram-users/src/controllers/user"
 	"github.com/Nistagram-Organization/nistagram-users/src/datasources/mysql"
 	agent2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/agent"
@@ -19,7 +20,6 @@ import (
 	"github.com/Nistagram-Organization/nistagram-users/src/services/user_grpc_service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"log"
@@ -30,14 +30,6 @@ import (
 var (
 	router = gin.Default()
 )
-
-func prometheusHandler() gin.HandlerFunc {
-	h := promhttp.Handler()
-
-	return func(c *gin.Context) {
-		h.ServeHTTP(c.Writer, c.Request)
-	}
-}
 
 func StartApplication() {
 	corsConfig := cors.DefaultConfig()
@@ -111,7 +103,7 @@ func StartApplication() {
 	router.POST("/users/following", userController.FollowUser)
 	router.GET("/users/following", userController.CheckIfUserIsFollowing)
 
-	router.GET("/metrics", prometheusHandler())
+	router.GET("/metrics", prometheus_handler.PrometheusGinHandler())
 
 	httpS := &http.Server{
 		Handler: router,
