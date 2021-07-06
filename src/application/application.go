@@ -1,7 +1,6 @@
 package application
 
 import (
-	"fmt"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/post"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
@@ -52,7 +51,7 @@ func StartApplication() {
 	}
 
 	port := ":8084"
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1%s", port))
+	l, err := net.Listen("tcp", port)
 	if err != nil {
 		panic(err)
 	}
