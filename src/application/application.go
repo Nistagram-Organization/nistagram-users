@@ -7,6 +7,7 @@ import (
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/prometheus_handler"
 	usercontroller "github.com/Nistagram-Organization/nistagram-users/src/controllers/user"
 	"github.com/Nistagram-Organization/nistagram-users/src/datasources/mysql"
 	agent2 "github.com/Nistagram-Organization/nistagram-users/src/repositories/agent"
@@ -101,6 +102,8 @@ func StartApplication() {
 	router.GET("/users/:username", userController.GetByUsername)
 	router.POST("/users/following", userController.FollowUser)
 	router.GET("/users/following", userController.CheckIfUserIsFollowing)
+
+	router.GET("/metrics", prometheus_handler.PrometheusGinHandler())
 
 	httpS := &http.Server{
 		Handler: router,
