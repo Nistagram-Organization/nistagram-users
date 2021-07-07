@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/Nistagram-Organization/nistagram-shared/src/datasources"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/post"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
@@ -20,6 +21,7 @@ import (
 	"github.com/Nistagram-Organization/nistagram-users/src/services/user_grpc_service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"log"
@@ -28,18 +30,22 @@ import (
 )
 
 var (
-	router = gin.Default()
+	router        = gin.Default()
+	requestsCount = prometheus_handler.GetHttpRequestsCounter()
+	requestsSize  = prometheus_handler.GetHttpRequestsSize()
 )
 
-func StartApplication() {
+func configureCORS() {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AddAllowHeaders("Authorization")
 	router.Use(cors.New(corsConfig))
+}
 
+func setupDatabase() (datasources.DatabaseClient, error) {
 	database := mysql.NewMySqlDatabaseClient()
 	if err := database.Init(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if err := database.Migrate(
@@ -48,6 +54,24 @@ func StartApplication() {
 		&agent.Agent{},
 		&post.PostUser{},
 	); err != nil {
+		return nil, err
+	}
+	return database, nil
+}
+
+func registerPrometheusMiddleware() {
+	prometheus.Register(requestsCount)
+	prometheus.Register(requestsSize)
+
+	router.Use(prometheus_handler.PrometheusMiddleware(requestsCount, requestsSize))
+}
+
+func StartApplication() {
+	configureCORS()
+	registerPrometheusMiddleware()
+
+	database, err := setupDatabase()
+	if err != nil {
 		panic(err)
 	}
 
