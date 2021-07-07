@@ -3,7 +3,7 @@ module github.com/Nistagram-Organization/nistagram-users
 go 1.16
 
 require (
-	github.com/Nistagram-Organization/nistagram-shared v0.0.0-20210707165648-97b4732921b7
+	github.com/Nistagram-Organization/nistagram-shared v0.0.0-20210707174326-bfd804653d49
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.2
 	github.com/prometheus/client_golang v1.11.0
