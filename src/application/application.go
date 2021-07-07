@@ -6,6 +6,7 @@ import (
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/jwt_utils"
 	"github.com/Nistagram-Organization/nistagram-shared/src/utils/prometheus_handler"
 	usercontroller "github.com/Nistagram-Organization/nistagram-users/src/controllers/user"
 	"github.com/Nistagram-Organization/nistagram-users/src/datasources/mysql"
@@ -93,13 +94,13 @@ func StartApplication() {
 		userService,
 	)
 
-	router.POST("/users/favorites", userController.AddPostToFavorites)
-	router.DELETE("/users/favorites", userController.RemovePostFromFavorites)
+	router.POST("/users/favorites", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.AddPostToFavorites)
+	router.DELETE("/users/favorites", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.RemovePostFromFavorites)
 
 	router.GET("/users", userController.GetByEmail)
-	router.PUT("/users", userController.Update)
+	router.PUT("/users", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.Update)
 	router.GET("/users/:username", userController.GetByUsername)
-	router.POST("/users/following", userController.FollowUser)
+	router.POST("/users/following", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.FollowUser)
 	router.GET("/users/following", userController.CheckIfUserIsFollowing)
 
 	router.GET("/metrics", prometheus_handler.PrometheusGinHandler())
