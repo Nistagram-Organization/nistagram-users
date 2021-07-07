@@ -33,12 +33,14 @@ var (
 	router        = gin.Default()
 	requestsCount = prometheus_handler.GetHttpRequestsCounter()
 	requestsSize  = prometheus_handler.GetHttpRequestsSize()
+	uniqueUsers   = prometheus_handler.GetUniqueClients()
 )
 
 func configureCORS() {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AddAllowHeaders("Authorization")
+	corsConfig.AddAllowHeaders("X-Forwarded-For")
 	router.Use(cors.New(corsConfig))
 }
 
@@ -62,8 +64,9 @@ func setupDatabase() (datasources.DatabaseClient, error) {
 func registerPrometheusMiddleware() {
 	prometheus.Register(requestsCount)
 	prometheus.Register(requestsSize)
+	prometheus.Register(uniqueUsers)
 
-	router.Use(prometheus_handler.PrometheusMiddleware(requestsCount, requestsSize))
+	router.Use(prometheus_handler.PrometheusMiddleware(requestsCount, requestsSize, uniqueUsers))
 }
 
 func StartApplication() {
