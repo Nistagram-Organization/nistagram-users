@@ -40,7 +40,6 @@ func configureCORS() {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AddAllowHeaders("Authorization")
-	corsConfig.AddAllowHeaders("X-Forwarded-For")
 	router.Use(cors.New(corsConfig))
 }
 
