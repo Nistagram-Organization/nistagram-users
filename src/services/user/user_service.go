@@ -55,7 +55,7 @@ func (s *userService) Update(editedUser *user.User) (*user.User, rest_error.Rest
 		return nil, err
 	}
 
-	existingUser.Name = editedUser.Name
+	existingUser.FirstName = editedUser.FirstName
 	existingUser.LastName = editedUser.LastName
 	existingUser.Website = editedUser.Website
 	existingUser.Phone = editedUser.Phone
