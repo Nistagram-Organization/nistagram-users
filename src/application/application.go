@@ -128,6 +128,8 @@ func StartApplication() {
 	router.GET("/users/:username", userController.GetByUsername)
 	router.POST("/users/following", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.FollowUser)
 	router.GET("/users/following", userController.CheckIfUserIsFollowing)
+	router.POST("/users/muted", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.MuteUser)
+	router.GET("/users/muted", userController.CheckIfUserIsMuted)
 
 	router.GET("/metrics", prometheus_handler.PrometheusGinHandler())
 

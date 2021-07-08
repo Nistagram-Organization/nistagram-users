@@ -18,6 +18,8 @@ type UserController interface {
 	GetByUsername(*gin.Context)
 	FollowUser(*gin.Context)
 	CheckIfUserIsFollowing(*gin.Context)
+	MuteUser(*gin.Context)
+	CheckIfUserIsMuted(*gin.Context)
 }
 
 type userController struct {
@@ -133,4 +135,31 @@ func (c *userController) CheckIfUserIsFollowing(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, following)
+}
+
+func (c *userController) MuteUser(ctx *gin.Context) {
+	var muteDTO dtos.MuteDTO
+	if err := ctx.ShouldBindJSON(&muteDTO); err != nil {
+		restErr := rest_error.NewBadRequestError("invalid json body")
+		ctx.JSON(restErr.Status(), restErr)
+		return
+	}
+
+	muteErr := c.usersService.MuteUser(&muteDTO)
+	if muteErr != nil {
+		ctx.JSON(muteErr.Status(), muteErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, muteErr)
+}
+
+func (c *userController) CheckIfUserIsMuted(ctx *gin.Context) {
+	muted, checkErr := c.usersService.CheckIfUserIsMuted(ctx.Query("user"), ctx.Query("muted_user"))
+	if checkErr != nil {
+		ctx.JSON(checkErr.Status(), checkErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, muted)
 }
