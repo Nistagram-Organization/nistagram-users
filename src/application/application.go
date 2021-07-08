@@ -1,11 +1,13 @@
 package application
 
 import (
+	"github.com/Nistagram-Organization/nistagram-shared/src/datasources"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/agent"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/post"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/registered_user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/jwt_utils"
 	"github.com/Nistagram-Organization/nistagram-shared/src/utils/prometheus_handler"
 	usercontroller "github.com/Nistagram-Organization/nistagram-users/src/controllers/user"
 	"github.com/Nistagram-Organization/nistagram-users/src/datasources/mysql"
@@ -19,6 +21,7 @@ import (
 	"github.com/Nistagram-Organization/nistagram-users/src/services/user_grpc_service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"log"
@@ -27,18 +30,23 @@ import (
 )
 
 var (
-	router = gin.Default()
+	router        = gin.Default()
+	requestsCount = prometheus_handler.GetHttpRequestsCounter()
+	requestsSize  = prometheus_handler.GetHttpRequestsSize()
+	uniqueUsers   = prometheus_handler.GetUniqueClients()
 )
 
-func StartApplication() {
+func configureCORS() {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AddAllowHeaders("Authorization")
 	router.Use(cors.New(corsConfig))
+}
 
+func setupDatabase() (datasources.DatabaseClient, error) {
 	database := mysql.NewMySqlDatabaseClient()
 	if err := database.Init(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if err := database.Migrate(
@@ -47,6 +55,25 @@ func StartApplication() {
 		&agent.Agent{},
 		&post.PostUser{},
 	); err != nil {
+		return nil, err
+	}
+	return database, nil
+}
+
+func registerPrometheusMiddleware() {
+	prometheus.Register(requestsCount)
+	prometheus.Register(requestsSize)
+	prometheus.Register(uniqueUsers)
+
+	router.Use(prometheus_handler.PrometheusMiddleware(requestsCount, requestsSize, uniqueUsers))
+}
+
+func StartApplication() {
+	configureCORS()
+	registerPrometheusMiddleware()
+
+	database, err := setupDatabase()
+	if err != nil {
 		panic(err)
 	}
 
@@ -93,13 +120,13 @@ func StartApplication() {
 		userService,
 	)
 
-	router.POST("/users/favorites", userController.AddPostToFavorites)
-	router.DELETE("/users/favorites", userController.RemovePostFromFavorites)
+	router.POST("/users/favorites", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.AddPostToFavorites)
+	router.DELETE("/users/favorites", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.RemovePostFromFavorites)
 
 	router.GET("/users", userController.GetByEmail)
-	router.PUT("/users", userController.Update)
+	router.PUT("/users", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.Update)
 	router.GET("/users/:username", userController.GetByUsername)
-	router.POST("/users/following", userController.FollowUser)
+	router.POST("/users/following", jwt_utils.GetJwtMiddleware(), jwt_utils.CheckRoles([]string{"user", "agent"}), userController.FollowUser)
 	router.GET("/users/following", userController.CheckIfUserIsFollowing)
 
 	router.GET("/metrics", prometheus_handler.PrometheusGinHandler())
