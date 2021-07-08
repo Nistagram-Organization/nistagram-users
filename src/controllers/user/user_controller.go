@@ -20,6 +20,8 @@ type UserController interface {
 	CheckIfUserIsFollowing(*gin.Context)
 	MuteUser(*gin.Context)
 	CheckIfUserIsMuted(*gin.Context)
+	BlockUser(*gin.Context)
+	CheckIfUserIsBlocked(*gin.Context)
 }
 
 type userController struct {
@@ -162,4 +164,31 @@ func (c *userController) CheckIfUserIsMuted(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, muted)
+}
+
+func (c *userController) BlockUser(ctx *gin.Context) {
+	var blockDTO dtos.BlockDTO
+	if err := ctx.ShouldBindJSON(&blockDTO); err != nil {
+		restErr := rest_error.NewBadRequestError("invalid json body")
+		ctx.JSON(restErr.Status(), restErr)
+		return
+	}
+
+	blockErr := c.usersService.BlockUser(&blockDTO)
+	if blockErr != nil {
+		ctx.JSON(blockErr.Status(), blockErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, blockErr)
+}
+
+func (c *userController) CheckIfUserIsBlocked(ctx *gin.Context) {
+	blocked, checkErr := c.usersService.CheckIfUserIsBlocked(ctx.Query("user"), ctx.Query("blocked_user"))
+	if checkErr != nil {
+		ctx.JSON(checkErr.Status(), checkErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, blocked)
 }

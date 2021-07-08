@@ -46,7 +46,7 @@ func (r *userRepository) GetByEmail(email string) (*user.User, rest_error.RestEr
 	userEntity := user.User{
 		Email: email,
 	}
-	if err := r.db.Where("email = ?", email).Preload("Favorites").Preload("Following").Preload("Muted").First(&userEntity).Error; err != nil {
+	if err := r.db.Where("email = ?", email).Preload("Favorites").Preload("Following").Preload("Muted").Preload("Blocked").First(&userEntity).Error; err != nil {
 		return nil, rest_error.NewNotFoundError(fmt.Sprintf("User does not exist"))
 	}
 

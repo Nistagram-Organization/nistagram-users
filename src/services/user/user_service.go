@@ -24,6 +24,8 @@ type UserService interface {
 	GetFollowingUsers(string) ([]string, rest_error.RestErr)
 	MuteUser(*dtos.MuteDTO) rest_error.RestErr
 	CheckIfUserIsMuted(string, string) (bool, rest_error.RestErr)
+	BlockUser(*dtos.BlockDTO) rest_error.RestErr
+	CheckIfUserIsBlocked(string, string) (bool, rest_error.RestErr)
 }
 
 type userService struct {
@@ -203,14 +205,12 @@ func (s *userService) GetFollowingUsers(userEmail string) ([]string, rest_error.
 
 	var followingUsers []string
 	var muted bool
+	var blocked bool
 	for _, u := range userEntity.Following {
-		muted = false
-		for _, mu := range userEntity.Muted {
-			if mu.ID == u.ID {
-				muted = true
-			}
-		}
-		if !muted {
+		muted, _ = s.CheckIfUserIsMuted(userEmail, u.Email)
+		blocked, _ = s.CheckIfUserIsBlocked(userEmail, u.Email)
+
+		if !muted && !blocked {
 			followingUsers = append(followingUsers, u.Email)
 		}
 	}
@@ -258,6 +258,49 @@ func (s *userService) CheckIfUserIsMuted(userEmail string, mutedUser string) (bo
 
 	for _, u := range userEntity.Muted {
 		if u.ID == userToMute.ID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (s *userService) BlockUser(blockDTO *dtos.BlockDTO) rest_error.RestErr {
+	userEntity, userErr := s.userRepository.GetByEmail(blockDTO.User)
+	if userErr != nil {
+		return userErr
+	}
+
+	userToBlock, userErr := s.userRepository.GetByEmail(blockDTO.UserToBlock)
+	if userErr != nil {
+		return userErr
+	}
+
+	for _, u := range userEntity.Blocked {
+		if u.ID == userToBlock.ID {
+			return nil
+		}
+	}
+
+	userEntity.Blocked = append(userEntity.Blocked, *userToBlock)
+	_, err := s.userRepository.Update(userEntity)
+
+	return err
+}
+
+func (s *userService) CheckIfUserIsBlocked(userEmail string, blockedUser string) (bool, rest_error.RestErr) {
+	userEntity, userErr := s.userRepository.GetByEmail(userEmail)
+	if userErr != nil {
+		return false, userErr
+	}
+
+	userToBlock, userErr := s.userRepository.GetByEmail(blockedUser)
+	if userErr != nil {
+		return false, userErr
+	}
+
+	for _, u := range userEntity.Blocked {
+		if u.ID == userToBlock.ID {
 			return true, nil
 		}
 	}
