@@ -146,6 +146,18 @@ func (s *userGrpcService) GetFollowingUsers(getFollowingUsersRequest *proto.GetF
 	return nil
 }
 
+func (s *userGrpcService) CheckIfUserIsBlocked(ctx context.Context, checkIfUserIsBlockedRequest *proto.CheckIfUserIsBlockedRequest) (*proto.CheckIfUserIsBlockedResponse, error) {
+	userEmail := checkIfUserIsBlockedRequest.GetUser()
+	blockedUser := checkIfUserIsBlockedRequest.GetBlockedUser()
+
+	blockedUserEntity, _ := s.userService.GetByUsername(blockedUser)
+
+	blocked, _ := s.userService.CheckIfUserIsBlocked(userEmail, blockedUserEntity.Email)
+
+	response := proto.CheckIfUserIsBlockedResponse{Blocked: blocked}
+	return &response, nil
+}
+
 func toAgent(agentEntity *proto.UserMessage) *agent.Agent {
 	userEntity := getUser(agentEntity)
 
