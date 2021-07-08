@@ -22,6 +22,8 @@ type UserService interface {
 	FollowUser(*dtos.FollowRequestDTO) rest_error.RestErr
 	CheckIfUserIsFollowing(string, string) (bool, rest_error.RestErr)
 	GetFollowingUsers(string) ([]string, rest_error.RestErr)
+	MuteUser(*dtos.MuteDTO) rest_error.RestErr
+	CheckIfUserIsMuted(string, string) (bool, rest_error.RestErr)
 }
 
 type userService struct {
@@ -200,8 +202,17 @@ func (s *userService) GetFollowingUsers(userEmail string) ([]string, rest_error.
 	}
 
 	var followingUsers []string
+	var muted bool
 	for _, u := range userEntity.Following {
-		followingUsers = append(followingUsers, u.Email)
+		muted = false
+		for _, mu := range userEntity.Muted {
+			if mu.ID == u.ID {
+				muted = true
+			}
+		}
+		if !muted {
+			followingUsers = append(followingUsers, u.Email)
+		}
 	}
 
 	return followingUsers, nil
@@ -209,4 +220,47 @@ func (s *userService) GetFollowingUsers(userEmail string) ([]string, rest_error.
 
 func (s *userService) GetById(id uint) (*user.User, rest_error.RestErr) {
 	return s.userRepository.GetById(id)
+}
+
+func (s *userService) MuteUser(muteDTO *dtos.MuteDTO) rest_error.RestErr {
+	userEntity, userErr := s.userRepository.GetByEmail(muteDTO.User)
+	if userErr != nil {
+		return userErr
+	}
+
+	userToMute, userErr := s.userRepository.GetByEmail(muteDTO.UserToMute)
+	if userErr != nil {
+		return userErr
+	}
+
+	for _, u := range userEntity.Muted {
+		if u.ID == userToMute.ID {
+			return nil
+		}
+	}
+
+	userEntity.Muted = append(userEntity.Muted, *userToMute)
+	_, err := s.userRepository.Update(userEntity)
+
+	return err
+}
+
+func (s *userService) CheckIfUserIsMuted(userEmail string, mutedUser string) (bool, rest_error.RestErr) {
+	userEntity, userErr := s.userRepository.GetByEmail(userEmail)
+	if userErr != nil {
+		return false, userErr
+	}
+
+	userToMute, userErr := s.userRepository.GetByEmail(mutedUser)
+	if userErr != nil {
+		return false, userErr
+	}
+
+	for _, u := range userEntity.Muted {
+		if u.ID == userToMute.ID {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
